@@ -801,8 +801,6 @@ class Source:
                      table_type: str | defs.TableType | None = None, 
                      year: str | int | None = None, 
                      partial_name: str | None = None,
-                     url_contains: str | None = None,
-                     id_contains: str | None = None,
                      url: str | None = None,
                      id: str | None = None
                      ) -> list[str]:
@@ -831,8 +829,6 @@ class Source:
         '''
 
         src = self.__find_datasets(table_type)
-
-        url, id = _handle_deprecated_filters(url, url_contains, id, id_contains)
 
         if url:
             src = src[src['URL'].str.contains(url, regex=False)]
@@ -890,8 +886,6 @@ class Source:
                   agency: str | None = None, 
                   force: bool = False,
                   verbose: bool | str | int = False,
-                  url_contains: str | None = None,
-                  id_contains: str | None = None,
                   url: str | None = None,
                   id: str | None = None
                   ) -> int:
@@ -928,8 +922,6 @@ class Source:
             Table object containing the requested data
         '''
 
-        url, id = _handle_deprecated_filters(url, url_contains, id, id_contains)
-
         return self.__load(table_type, year, agency, True, pbar=False, return_count=True, force=force, verbose=verbose, 
                            url_contains=url, id=id)
     
@@ -944,8 +936,6 @@ class Source:
                 sortby=None,
                 force: bool =False,
                 verbose: bool | str | int = False,
-                url_contains: str | None = None,
-                id_contains: str | None = None,
                 format_date: bool = True,
                 url: str | None = None,
                 id: str | None = None
@@ -993,32 +983,10 @@ class Source:
             generates Table objects containing the requested data
         '''
 
-        url, id = _handle_deprecated_filters(url, url_contains, id, id_contains)
-
         count = self.get_count(table_type, year, agency, force, verbose=verbose, url=url, id=id)
         for k in range(offset, count, nbatch):
             yield self.__load(table_type, year, agency, True, pbar, nrows=min(nbatch, count-k), offset=k, 
                               verbose=verbose, url_contains=url, id=id, format_date=format_date, sortby=sortby)
-    
-    @deprecated("load_from_url_gen is deprecated and will be removed in a future release. Please use load_iter instead. "+
-                "load_iter uses the same inputs except table_type now comes before year.")
-    def load_from_url_gen(self, 
-                          year: str | int | list[int], 
-                          table_type: str | defs.TableType | None = None, 
-                          agency: str | None = None, 
-                          pbar: bool = False, 
-                          nbatch: int = 10000, 
-                          offset: int = 0, 
-                          force: bool =False,
-                          verbose: bool | str | int = False
-                          ) -> Iterator[Table]:
-        '''load_from_url_gen is deprecated. Please use load_iter instead.
-        '''
-
-        count = self.get_count(table_type, year, agency, force, verbose=verbose)
-        for k in range(offset, count, nbatch):
-            yield self.__load(table_type, year, agency, True, pbar, nrows=min(nbatch, count-k), offset=k, verbose=verbose)
-
     
     @input_swap([1,2], ['table_type','year'], [defs.TableType, {'values':[defs.NA, defs.MULTI], 'types':[list, int]}], error=True, opt1=None)
     def load(self, 
@@ -1030,8 +998,6 @@ class Source:
             offset: int = 0,
             sortby=None,
             verbose: bool | str | int = False,
-            url_contains: str | None = None,
-            id_contains: str | None = None,
             format_date: bool = True,
             url: str | None = None,
             id: str | None = None
@@ -1076,29 +1042,10 @@ class Source:
             Table object containing the requested data
         '''
 
-        url, id = _handle_deprecated_filters(url, url_contains, id, id_contains)
-
         return self.__load(table_type, year, agency, True, pbar, nrows=nrows, offset=offset, sortby=sortby, 
                            verbose=verbose, url_contains=url, id=id, format_date=format_date)
 
     
-    @deprecated("load_from_url is deprecated and will be removed in a future release. Please use load instead. "+
-                "load uses the same inputs except table_type now comes before year.")
-    def load_from_url(self, 
-                      year: str | int | list[int], 
-                      table_type: str | defs.TableType | None = None, 
-                      agency: str | None = None,
-                      pbar: bool = True,
-                      nrows: int | None = None, 
-                      offset: int = 0,
-                      sortby=None,
-                      verbose: bool | str | int = False
-                      ) -> Table:
-        '''load_from_url is deprecated and will be removed in a future release. Please use load instead.
-        '''
-
-        return self.__load(table_type, year, agency, True, pbar, nrows=nrows, offset=offset, sortby=sortby, verbose=verbose)
-
     def __find_datasets(self, table_type, src=None):
         if src is None:
             src = self.datasets.copy()
@@ -1282,8 +1229,6 @@ class Source:
                       table_type: str | defs.TableType | None = None,
                       agency: str | None = None,
                       zip: bool =False,
-                      url_contains: str | None = None,
-                      id_contains: str | None = None,
                       format_date: bool = True,
                       filename: str | None = None,
                       url: str | None = None,
@@ -1322,8 +1267,6 @@ class Source:
         Table
             Table object containing the requested data
         '''
-
-        url, id = _handle_deprecated_filters(url, url_contains, id, id_contains)
 
         table = self.__load(table_type, year, agency, False, url_contains=url, id=id, format_date=format_date)
 
@@ -1404,8 +1347,6 @@ class Source:
                          output_dir: str | None = None, 
                          table_type: str | defs.TableType | None = None,
                          agency: str | None = None,
-                         url_contains: str | None = None,
-                         id_contains: str | None = None,
                          url: str | None = None,
                          id: str | None = None
                          ) -> str:
@@ -1435,8 +1376,6 @@ class Source:
         str
             Auto-generated CSV filename
         '''
-
-        url, id = _handle_deprecated_filters(url, url_contains, id, id_contains)
 
         table = self.__load(table_type, year, agency, False, url_contains=url, id=id)
 
@@ -1675,20 +1614,3 @@ def _get_years_to_check(years, cur_year, force, isfile):
         years_to_check = [x for x in range(max_year+1,cur_year+1)]
 
     return years_to_check
-
-def _handle_deprecated_filters(url, url_contains, id, id_contains):
-    if url_contains:
-        if url and url!=url_contains:
-            raise ValueError("url and url_contains cannot both be set. Please only use url, which replaces url_contains.")
-        else:
-            warnings.warn('url_contains input has been deprecated. Please replace with url.', DeprecationWarning)
-            url = url_contains
-
-    if id_contains:
-        if id and id!=id_contains:
-            raise ValueError("id and id_contains cannot both be set. Please only use id, which replaces id_contains.")
-        else:
-            warnings.warn('id_contains input has been deprecated. Please replace with id.', DeprecationWarning)
-            id = id_contains
-
-    return url, id
