@@ -8,7 +8,6 @@ import warnings
 import openpolicedata as opd
 from openpolicedata.defs import TableType
 from openpolicedata.deprecated._decorators import deprecated, input_swap
-from openpolicedata.deprecated.datasetsCompat import datasets_query
 from openpolicedata.deprecated._pandas import DeprecationHandlerDataFrame, DeprecationHandlerSeries
 import pytest
 
@@ -78,53 +77,10 @@ def test_inputswap_class_error(year, table_type):
 def fdep():
 	pass
 
-@pytest.mark.parametrize("func", [fdep, datasets_query])
-def test_deprecated_decorator(func):
-	with pytest.deprecated_call():
-		func()
-
-
-@pytest.mark.parametrize("type1, type2", [("COMPLAINTS - SUBJECTS", 'COMPLAINTS - CIVILIANS'),
-										  ("USE OF FORCE - SUBJECTS/OFFICERS", 'USE OF FORCE - CIVILIANS/OFFICERS')])
-def test_deprecated_enums(type1, type2):
-	with pytest.deprecated_call():
-		assert TableType(type1) == TableType(type2)
-
 
 def test_datasets_no_civilian_tabletypes():
 	df = opd.datasets.query()
 	assert not df["TableType"].str.contains("CIVILIAN").any()
-
-
-def test_datasets_equals_civilian():
-	df = opd.datasets.query()
-	assert isinstance(df, DeprecationHandlerDataFrame)
-
-	s = df["TableType"]
-	assert isinstance(s, DeprecationHandlerSeries)
-	with pytest.deprecated_call():
-		t = s == "USE OF FORCE - CIVILIANS/OFFICERS"
-
-	assert t.sum()>0
-	s = df["TableType"][t]
-	assert isinstance(s, pd.Series)
-	assert len(s)>0
-	assert len(df[t])>0
-
-
-def test_datasets_equals_subjects():
-	df = opd.datasets.query()
-	assert isinstance(df, DeprecationHandlerDataFrame)
-
-	s = df["TableType"]
-	assert isinstance(s, DeprecationHandlerSeries)
-	with warnings.catch_warnings():
-		warnings.simplefilter("error")
-		t = s == "USE OF FORCE - SUBJECTS/OFFICERS"
-
-	assert t.sum()>0
-	assert len(df["TableType"][t])>0
-	assert len(df[t])>0
 
 
 def test_datasets_get_datatype():
@@ -211,32 +167,6 @@ def test_datasets_loc_single_row():
 	assert isinstance(df.loc[0], pd.Series)
 
 
-def test_datasets_isin_civilians():
-	df = opd.datasets.query()
-	assert isinstance(df, DeprecationHandlerDataFrame)
-
-	with pytest.deprecated_call():
-		df["TableType"].isin(["ARRESTS", "OFFICER-INVOLVED SHOOTINGS - CIVILIANS"])
-
-
-def test_datasets_isin_subjects():
-	df = opd.datasets.query()
-	assert isinstance(df, DeprecationHandlerDataFrame)
-
-	with warnings.catch_warnings():
-		warnings.simplefilter("error")
-		df["TableType"].isin(["ARRESTS", "OFFICER-INVOLVED SHOOTINGS - SUBJECTS"])
-
-
-def test_datasets_isin_DataType():
-	df = opd.datasets.query()
-	assert isinstance(df, DeprecationHandlerDataFrame)
-
-	with warnings.catch_warnings():
-		warnings.simplefilter("error")
-		df["DataType"].isin(["ARRESTS", "OFFICER-INVOLVED SHOOTINGS - SUBJECTS"])
-
-
 def test_pandas_query_no_subject():
 	df = opd.datasets.query(state="Virginia")
 	assert isinstance(df, pd.DataFrame)
@@ -246,32 +176,6 @@ def test_pandas_query_has_subject():
 	df = opd.datasets.query(state="California")
 	assert isinstance(df, DeprecationHandlerDataFrame)
 
-
-def test_pandas_query_tabletype_subject():
-	with pytest.deprecated_call():
-		df = opd.datasets.query(table_type="COMPLAINTS - CIVILIANS")
-	assert isinstance(df, DeprecationHandlerDataFrame)
-	assert len (df)>0
-
-
-def test_pandas_query_tabletype_no_subject():
-	with warnings.catch_warnings():
-		warnings.simplefilter("error")
-		df = opd.datasets.query(table_type=opd.defs.TableType.COMPLAINTS_SUBJECTS)
-	assert isinstance(df, pd.DataFrame)
-	assert len (df)>0
-
-def test_tabletype_contains_subject():
-	with pytest.deprecated_call():
-		t = opd.datasets.get_table_types(contains="- CIVILIANS")
-	assert len (t)>0
-
-
-def test_tabletype_contains_no_subject():
-	with warnings.catch_warnings():
-		warnings.simplefilter("error")
-		t = opd.datasets.get_table_types(contains="- SUBJECTS")
-	assert len (t)>0
 
 @pytest.mark.parametrize("y", [7, 13, range(0,8), [6, 7,13], slice(0,8)])
 @pytest.mark.filterwarnings("error::DeprecationWarning")
@@ -288,41 +192,6 @@ def test_datasets_iloc_single_input_no_warning(all_datasets, x):
 def test_datasets_iloc_warning(all_datasets, y):
 	with pytest.deprecated_call():
 		all_datasets.iloc[0,y]
-
-@pytest.mark.parametrize("x, y", [(None, 'Test'), ('Test', 'Test')])
-def test_url_contains_warning(x,y):
-	with pytest.deprecated_call():
-		result,_ = opd.data._handle_deprecated_filters(url=x, url_contains=y, id=None, id_contains=None)
-
-	assert result==y
-
-@pytest.mark.parametrize("x, y", [(None, 'Test'), ('Test', 'Test')])
-def test_id_contains_warning(x,y):
-	with pytest.deprecated_call():
-		_,result = opd.data._handle_deprecated_filters(url=None, url_contains=None, id=x, id_contains=y)
-
-	assert result==y
-
-def test_url_contains_error():
-	with pytest.raises(ValueError):
-		opd.data._handle_deprecated_filters(url='TEST', url_contains='TEST2', id=None, id_contains=None)
-
-def test_id_contains_error():
-	with pytest.raises(ValueError):
-		opd.data._handle_deprecated_filters(url=None, url_contains=None, id='TEST', id_contains='TEST2')
-
-
-def test_url_success():
-	url = 'TEST'
-	result,_ = opd.data._handle_deprecated_filters(url=url, url_contains=None, id=None, id_contains=None)
-
-	assert result==url
-
-def test_id_success():
-	id = 'TEST'
-	_, result = opd.data._handle_deprecated_filters(url=None, url_contains=None, id=id, id_contains=None)
-
-	assert result==id
 
 if __name__ == "__main__":
 	csvfile = None
